@@ -3,7 +3,7 @@ import os
 import requests
 
 API_KEY = os.getenv("MBTA_API_KEY", "")
-ENDPOINT_URL = "https://api-v3.mbta.com"  # DO NOT CHANGE
+ENDPOINT_URL = "https://api-v3.mbta.com"
 
 app = FastAPI()
 

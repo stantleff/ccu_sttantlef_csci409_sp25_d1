@@ -3,11 +3,11 @@ import os
 import httpx
 
 API_KEY = os.getenv("MBTA_API_KEY", "")
-ENDPOINT_URL = "https://api-v3.mbta.com"  # DO NOT CHANGE
+ENDPOINT_URL = "https://api-v3.mbta.com"
 
 app = FastAPI()
 
-# Dependency to fetch all vehicles (optionally filtered)
+# Dependency to fetch all vehicles
 async def get_all_vehicles(route: str = None, revenue: bool = None):
     params = {"api_key": API_KEY}
 

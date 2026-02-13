@@ -3,7 +3,7 @@ import os
 import httpx
 
 API_KEY = os.getenv("MBTA_API_KEY", "")
-ENDPOINT_URL = "https://api-v3.mbta.com"  # DO NOT CHANGE
+ENDPOINT_URL = "https://api-v3.mbta.com"
 
 app = FastAPI()
 
@@ -28,7 +28,7 @@ async def get_alert_by_id(alert_id: str):
         response.raise_for_status()
         return response.json()
 
-# List alerts (supports query params)
+# List alerts
 @app.get("/")
 async def read_alerts(route: str = None, stop: str = None, alerts=Depends(get_all_alerts)):
     return alerts
