@@ -2,10 +2,12 @@ from fastapi import FastAPI, Depends
 import os
 import httpx
 
+from auth import verify_basic_auth
+
 API_KEY = os.getenv("MBTA_API_KEY", "")
 ENDPOINT_URL = "https://api-v3.mbta.com"
 
-app = FastAPI()
+app = FastAPI(title="Alerts Service", dependencies=[Depends(verify_basic_auth)])
 
 # Dependency to fetch all alerts
 async def get_all_alerts(route: str = None, stop: str = None):

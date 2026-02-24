@@ -1,47 +1,108 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 import os
 import requests
 
-API_KEY = os.getenv("MBTA_API_KEY", "")
+from auth import verify_basic_auth
+
+API_KEY = os.getenv("MBTA_API_KEY", "").strip()
 ENDPOINT_URL = "https://api-v3.mbta.com"
 
-app = FastAPI()
+app = FastAPI(title="Routes Service", dependencies=[Depends(verify_basic_auth)])
+
+
+def mbta_get(path: str):
+    """
+    Helper to call MBTA and safely handle bad responses
+    """
+    url = f"{ENDPOINT_URL}{path}"
+
+
+
+
+    headers = {}
+    if API_KEY:
+        headers["x-api-key"] = API_KEY
+
+    response = requests.get(url, headers=headers)
+
+    # If MBTA returned an error HTTP status, show it clearly
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "MBTA API returned an error status",
+                "status_code": response.status_code,
+                "url": url,
+                "body": response.text,
+            },
+        )
+
+    # MBTA should return JSON. If it doesn't, handle it.
+    try:
+        payload = response.json()
+    except Exception:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "MBTA API did not return valid JSON",
+                "url": url,
+                "body": response.text,
+            },
+        )
+
+    # MBTA normal responses contain "data".
+    if "data" not in payload:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "MBTA response missing expected 'data' key",
+                "url": url,
+                "payload": payload,
+            },
+        )
+
+    return payload["data"]
+
 
 # List all routes
 @app.get("/")
 def get_routes():
     routes_list = []
-    response = requests.get(ENDPOINT_URL + f"/routes?api_key={API_KEY}")
-    routes = response.json()["data"]
+    routes = mbta_get("/routes")
 
     for route in routes:
-        routes_list.append({
-            "id": route["id"],
-            "type": route["type"],
-            "color": route["attributes"]["color"],
-            "text_color": route["attributes"]["text_color"],
-            "description": route["attributes"]["description"],
-            "long_name": route["attributes"]["long_name"],
-            "type": route["attributes"]["type"],
-        })
+        attrs = route.get("attributes", {}) or {}
+        routes_list.append(
+            {
+                "id": route.get("id"),
+                "type": route.get("type"),
+                "color": attrs.get("color"),
+                "text_color": attrs.get("text_color"),
+                "description": attrs.get("description"),
+                "long_name": attrs.get("long_name"),
+                "route_type": attrs.get("type"),
+            }
+        )
 
     return {"routes": routes_list}
+
 
 # Get one route by id
 @app.get("/{route_id}")
 def get_route(route_id: str):
-    response = requests.get(ENDPOINT_URL + f"/routes/{route_id}?api_key={API_KEY}")
-    route_data = response.json()["data"]
+    route_data = mbta_get(f"/routes/{route_id}")
+
+    attrs = route_data.get("attributes", {}) or {}
 
     route = {
-        "id": route_data["id"],
-        "type": route_data["type"],
-        "color": route_data["attributes"]["color"],
-        "text_color": route_data["attributes"]["text_color"],
-        "description": route_data["attributes"]["description"],
-        "long_name": route_data["attributes"]["long_name"],
-        "type": route_data["attributes"]["type"],
+        "id": route_data.get("id"),
+        "type": route_data.get("type"),
+        "color": attrs.get("color"),
+        "text_color": attrs.get("text_color"),
+        "description": attrs.get("description"),
+        "long_name": attrs.get("long_name"),
+        "route_type": attrs.get("type"),
     }
 
-    return {"routes": route}
+    return {"route": route}
 

@@ -2,10 +2,12 @@ from fastapi import FastAPI, Depends
 import os
 import httpx
 
+from auth import verify_basic_auth
+
 API_KEY = os.getenv("MBTA_API_KEY", "")
 ENDPOINT_URL = "https://api-v3.mbta.com"
 
-app = FastAPI()
+app = FastAPI(title="Vehicles Service", dependencies=[Depends(verify_basic_auth)])
 
 # Dependency to fetch all vehicles
 async def get_all_vehicles(route: str = None, revenue: bool = None):

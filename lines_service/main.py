@@ -1,11 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 import os
 import requests
+
+from auth import verify_basic_auth
 
 API_KEY = os.getenv("MBTA_API_KEY", "")
 ENDPOINT_URL = "https://api-v3.mbta.com"
 
-app = FastAPI()
+app = FastAPI(title="Lines Service", dependencies=[Depends(verify_basic_auth)])
 
 # List all lines
 @app.get("/")
